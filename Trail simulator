@@ -28,46 +28,12 @@ local function findProximityPrompt(model)
     return nil
 end
 
--- Fonction pour collecter un brainrot et se téléporter
-local function collectBrainrot(brainrotModel)
-    if not brainrotModel then return end
-
-    -- Trouve la PrimaryPart
-    local primaryPart = brainrotModel.PrimaryPart or brainrotModel:FindFirstChild("Mesh") or brainrotModel:FindFirstChild("Base")
-    if not primaryPart then
-        warn("Pas de PrimaryPart pour : " .. brainrotModel.Name)
-        return
-    end
-
-    -- Trouve le ProximityPrompt
-    local proximityPrompt = findProximityPrompt(brainrotModel)
-    if not proximityPrompt then
-        warn("Aucun ProximityPrompt trouvé dans : " .. brainrotModel.Name)
-        return
-    end
-
-    -- Téléporte le joueur sur le brainrot
-    local character = player.Character
-    if character and character:FindFirstChild("HumanoidRootPart") then
-        character.HumanoidRootPart.CFrame = primaryPart.CFrame + Vector3.new(0, 3, 0)
-        wait(0.2) 
-    end
-
-    -- Active le ProximityPrompt
-    proximityPrompt:InputHoldBegin()
-    wait(0.5)
-    proximityPrompt:InputHoldEnd()
-
-    print("Brainrot " .. brainrotModel.Name .. " collecté.")
-
-    -- ====== NOUVELLE PARTIE : TÉLÉPORTATION VERS Plot_skyatriy ======
-    wait(1) -- On laisse 1 seconde au jeu pour valider l'objet dans l'inventaire
-    
-    local plotName = "Plot_skyatriy" -- Nom exact du plot
+-- Fonction de téléportation vers la base
+local function teleportToBase()
+    local plotName = "Plot_skyatriy"
     local plot = Workspace:FindFirstChild(plotName)
     
     if plot then
-        -- On cherche la partie principale du plot pour se positionner dessus
         local plotPart = plot.PrimaryPart or plot:FindFirstChild("Base") or plot
         local char = player.Character
         
@@ -78,7 +44,37 @@ local function collectBrainrot(brainrotModel)
     else
         warn("Le plot '" .. plotName .. "' est introuvable dans Workspace.")
     end
-    -- =================================================================
+end
+
+-- Fonction pour collecter un brainrot (retourne true si succès, false si échec/inventaire plein)
+local function collectBrainrot(brainrotModel)
+    if not brainrotModel then return false end
+
+    local primaryPart = brainrotModel.PrimaryPart or brainrotModel:FindFirstChild("Mesh") or brainrotModel:FindFirstChild("Base")
+    if not primaryPart then return false end
+
+    local proximityPrompt = findProximityPrompt(brainrotModel)
+    if not proximityPrompt then return false end
+
+    local character = player.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character.HumanoidRootPart.CFrame = primaryPart.CFrame + Vector3.new(0, 3, 0)
+        wait(0.2) 
+    end
+
+    proximityPrompt:InputHoldBegin()
+    wait(0.5)
+    proximityPrompt:InputHoldEnd()
+
+    -- Vérification cruciale : est-ce que le brainrot a bien disparu ?
+    wait(0.2) -- Laisse le temps au serveur de traiter la demande
+    if brainrotModel.Parent == COSMIC_PART then
+        -- Le modèle est toujours là, donc la collecte a échoué (inventaire plein)
+        return false 
+    else
+        print("Brainrot " .. brainrotModel.Name .. " collecté.")
+        return true
+    end
 end
 
 -- Fonction pour collecter tous les brainrots
@@ -87,10 +83,22 @@ local function collectAllCosmicBrainrots()
 
     for _, brainrotModel in ipairs(COSMIC_PART:GetChildren()) do
         if brainrotModel:IsA("Model") then
-            collectBrainrot(brainrotModel)
+            local success = collectBrainrot(brainrotModel)
+            
+            if not success then
+                -- Si la collecte échoue (inventaire plein), on arrête la boucle
+                statusLabel.Text = "Inventaire plein ! Retour..."
+                warn("Inventaire plein, arrêt de la collecte.")
+                wait(1)
+                break
+            end
+            
             wait(1) -- Délai entre chaque collecte
         end
     end
+
+    -- Téléportation à la fin, que ce soit un succès total ou un arrêt anticipé
+    teleportToBase()
 end
 
 -- Création de l'interface (GUI)
@@ -157,7 +165,6 @@ collectButton.MouseButton1Click:Connect(function()
         collectButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
         isCollecting = true
         
-        -- Lance la collecte en tâche de fond pour ne pas figer l'interface
         task.spawn(function()
             collectAllCosmicBrainrots()
             if isCollecting then -- Remet le bouton à zéro une fois terminé
