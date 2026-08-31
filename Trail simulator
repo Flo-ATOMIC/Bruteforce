@@ -28,7 +28,7 @@ local function findProximityPrompt(model)
     return nil
 end
 
--- Fonction pour collecter un brainrot
+-- Fonction pour collecter un brainrot et se téléporter
 local function collectBrainrot(brainrotModel)
     if not brainrotModel then return end
 
@@ -46,11 +46,11 @@ local function collectBrainrot(brainrotModel)
         return
     end
 
-    -- Téléporte le joueur
+    -- Téléporte le joueur sur le brainrot
     local character = player.Character
     if character and character:FindFirstChild("HumanoidRootPart") then
         character.HumanoidRootPart.CFrame = primaryPart.CFrame + Vector3.new(0, 3, 0)
-        wait(0.2) -- Petit délai pour que le joueur soit bien positionné
+        wait(0.2) 
     end
 
     -- Active le ProximityPrompt
@@ -59,6 +59,26 @@ local function collectBrainrot(brainrotModel)
     proximityPrompt:InputHoldEnd()
 
     print("Brainrot " .. brainrotModel.Name .. " collecté.")
+
+    -- ====== NOUVELLE PARTIE : TÉLÉPORTATION VERS Plot_skyatriy ======
+    wait(1) -- On laisse 1 seconde au jeu pour valider l'objet dans l'inventaire
+    
+    local plotName = "Plot_skyatriy" -- Nom exact du plot
+    local plot = Workspace:FindFirstChild(plotName)
+    
+    if plot then
+        -- On cherche la partie principale du plot pour se positionner dessus
+        local plotPart = plot.PrimaryPart or plot:FindFirstChild("Base") or plot
+        local char = player.Character
+        
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = plotPart.CFrame + Vector3.new(0, 3, 0)
+            print("Téléporté vers " .. plotName)
+        end
+    else
+        warn("Le plot '" .. plotName .. "' est introuvable dans Workspace.")
+    end
+    -- =================================================================
 end
 
 -- Fonction pour collecter tous les brainrots
