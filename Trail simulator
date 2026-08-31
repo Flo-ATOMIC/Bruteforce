@@ -2,6 +2,8 @@
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
 
 -- Récupère le joueur local
 local player = Players.LocalPlayer
@@ -11,18 +13,32 @@ player.CharacterAdded:Connect(function(character)
     character:WaitForChild("HumanoidRootPart")
 end)
 
--- Attend que ItemSpawners et Cosmic existent
+-- Cherche ItemSpawners dans Workspace, ReplicatedStorage ou ServerStorage
 local ITEM_SPAWNERS
-repeat
-    ITEM_SPAWNERS = Workspace:FindFirstChild("ItemSpawners") -- Note le "s" à la fin
-    wait(0.5)
-until ITEM_SPAWNERS
+local function findItemSpawners()
+    ITEM_SPAWNERS = Workspace:FindFirstChild("ItemSpawners")
+    if ITEM_SPAWNERS then return true end
 
+    ITEM_SPAWNERS = ReplicatedStorage:FindFirstChild("ItemSpawners")
+    if ITEM_SPAWNERS then return true end
+
+    ITEM_SPAWNERS = ServerStorage:FindFirstChild("ItemSpawners")
+    if ITEM_SPAWNERS then return true end
+
+    return false
+end
+
+-- Attend que ItemSpawners existe
+while not findItemSpawners() do
+    wait(1)
+end
+
+-- Cherche Cosmic dans ItemSpawners
 local COSMIC_PART
-repeat
+while not COSMIC_PART do
     COSMIC_PART = ITEM_SPAWNERS:FindFirstChild("Cosmic")
-    wait(0.5)
-until COSMIC_PART
+    wait(1)
+end
 
 -- Fonction pour trouver un ProximityPrompt dans un modèle
 local function findProximityPrompt(model)
