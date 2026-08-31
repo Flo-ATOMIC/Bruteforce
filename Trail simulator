@@ -1,36 +1,25 @@
 -- Services
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local UserInputService = game:GetService("UserInputService")
 
--- Récupère le joueur local
 local player = Players.LocalPlayer
 
--- Attend que le personnage du joueur soit chargé
+-- Attend que le personnage soit chargé
 player.CharacterAdded:Connect(function(character)
     character:WaitForChild("HumanoidRootPart")
 end)
 
--- Attend que ItemSpawners existe dans Workspace
-local ITEM_SPAWNERS = Workspace:FindFirstChild("ItemSpawners")
-while not ITEM_SPAWNERS do
-    wait(1)
-    ITEM_SPAWNERS = Workspace:FindFirstChild("ItemSpawners")
-end
+-- Attend ItemSpawners avec un timeout de 10 secondes
+local ITEM_SPAWNERS = Workspace:WaitForChild("ItemSpawners", 10)
+if not ITEM_SPAWNERS then warn("ItemSpawners introuvable !") return end
 
--- Cherche Cosmic dans ItemSpawners
-local COSMIC_PART = ITEM_SPAWNERS:FindFirstChild("Cosmic")
-while not COSMIC_PART do
-    wait(1)
-    COSMIC_PART = ITEM_SPAWNERS:FindFirstChild("Cosmic")
-end
+-- Attend Cosmic avec un timeout de 10 secondes
+local COSMIC_PART = ITEM_SPAWNERS:WaitForChild("Cosmic", 10)
+if not COSMIC_PART then warn("Cosmic introuvable !") return end
 
--- Fonction pour trouver un ProximityPrompt dans un modèle
+-- Fonction pour trouver un ProximityPrompt
 local function findProximityPrompt(model)
-    if not model then
-        warn("Le modèle est nil !")
-        return nil
-    end
+    if not model then return nil end
     for _, child in ipairs(model:GetDescendants()) do
         if child:IsA("ProximityPrompt") then
             return child
@@ -41,63 +30,50 @@ end
 
 -- Fonction pour collecter un brainrot
 local function collectBrainrot(brainrotModel)
-    if not brainrotModel then
-        warn("brainrotModel est nil !")
-        return
-    end
+    if not brainrotModel then return end
 
     -- Trouve la PrimaryPart
-    local primaryPart = brainrotModel.PrimaryPart
+    local primaryPart = brainrotModel.PrimaryPart or brainrotModel:FindFirstChild("Mesh") or brainrotModel:FindFirstChild("Base")
     if not primaryPart then
-        primaryPart = brainrotModel:FindFirstChild("Mesh") or brainrotModel:FindFirstChild("Base")
-    end
-
-    if not primaryPart then
-        warn("Le modèle " .. brainrotModel.Name .. " n'a pas de PrimaryPart.")
+        warn("Pas de PrimaryPart pour : " .. brainrotModel.Name)
         return
     end
 
     -- Trouve le ProximityPrompt
     local proximityPrompt = findProximityPrompt(brainrotModel)
     if not proximityPrompt then
-        warn("Aucun ProximityPrompt trouvé dans " .. brainrotModel.Name)
+        warn("Aucun ProximityPrompt trouvé dans : " .. brainrotModel.Name)
         return
     end
 
-    -- Téléporte le joueur local vers le brainrot
+    -- Téléporte le joueur
     local character = player.Character
-    if character then
-        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-        if humanoidRootPart then
-            humanoidRootPart.CFrame = primaryPart.CFrame + Vector3.new(0, 3, 0)
-        end
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character.HumanoidRootPart.CFrame = primaryPart.CFrame + Vector3.new(0, 3, 0)
+        wait(0.2) -- Petit délai pour que le joueur soit bien positionné
     end
 
-    -- Active le ProximityPrompt localement
+    -- Active le ProximityPrompt
     proximityPrompt:InputHoldBegin()
     wait(0.5)
     proximityPrompt:InputHoldEnd()
 
-    print("Brainrot " .. brainrotModel.Name .. " collecté localement.")
+    print("Brainrot " .. brainrotModel.Name .. " collecté.")
 end
 
--- Fonction pour collecter tous les brainrots enfants de Cosmic
+-- Fonction pour collecter tous les brainrots
 local function collectAllCosmicBrainrots()
-    if not COSMIC_PART then
-        warn("COSMIC_PART est nil ! Impossible de collecter les brainrots.")
-        return
-    end
+    if not COSMIC_PART then return end
 
-    -- Si Cosmic est une Part, on récupère ses enfants (les brainrots)
     for _, brainrotModel in ipairs(COSMIC_PART:GetChildren()) do
         if brainrotModel:IsA("Model") then
             collectBrainrot(brainrotModel)
-            wait(1) -- Délai pour éviter les bugs
+            wait(1) -- Délai entre chaque collecte
         end
     end
 end
 
--- Crée le ScreenGui et ses éléments
+-- Création de l'interface (GUI)
 local gui = Instance.new("ScreenGui")
 gui.Name = "BrainrotCollectorGUI"
 gui.Parent = player:WaitForChild("PlayerGui")
@@ -132,9 +108,13 @@ statusLabel.Font = Enum.Font.GothamBold
 statusLabel.TextSize = 12
 statusLabel.Parent = mainFrame
 
--- Effet de survol pour le bouton
+-- Gestion des clics
+local isCollecting = false
+
 collectButton.MouseEnter:Connect(function()
-    collectButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    if not isCollecting then
+        collectButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    end
 end)
 
 collectButton.MouseLeave:Connect(function()
@@ -145,10 +125,6 @@ collectButton.MouseLeave:Connect(function()
     end
 end)
 
--- Variable pour suivre l'état de la collecte
-local isCollecting = false
-
--- Fonction pour activer/désactiver la collecte
 collectButton.MouseButton1Click:Connect(function()
     if isCollecting then
         collectButton.Text = "Collecter les Brainrots"
@@ -160,6 +136,16 @@ collectButton.MouseButton1Click:Connect(function()
         statusLabel.Text = "Collecte en cours..."
         collectButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
         isCollecting = true
-        collectAllCosmicBrainrots()
+        
+        -- Lance la collecte en tâche de fond pour ne pas figer l'interface
+        task.spawn(function()
+            collectAllCosmicBrainrots()
+            if isCollecting then -- Remet le bouton à zéro une fois terminé
+                collectButton.Text = "Collecter les Brainrots"
+                statusLabel.Text = "Prêt à collecter"
+                collectButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+                isCollecting = false
+            end
+        end)
     end
-end
+end)
