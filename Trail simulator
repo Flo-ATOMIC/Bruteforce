@@ -2,8 +2,6 @@
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerStorage = game:GetService("ServerStorage")
 
 -- Récupère le joueur local
 local player = Players.LocalPlayer
@@ -13,35 +11,26 @@ player.CharacterAdded:Connect(function(character)
     character:WaitForChild("HumanoidRootPart")
 end)
 
--- Cherche ItemSpawners dans Workspace, ReplicatedStorage ou ServerStorage
-local ITEM_SPAWNERS
-local function findItemSpawners()
-    ITEM_SPAWNERS = Workspace:FindFirstChild("ItemSpawners")
-    if ITEM_SPAWNERS then return true end
-
-    ITEM_SPAWNERS = ReplicatedStorage:FindFirstChild("ItemSpawners")
-    if ITEM_SPAWNERS then return true end
-
-    ITEM_SPAWNERS = ServerStorage:FindFirstChild("ItemSpawners")
-    if ITEM_SPAWNERS then return true end
-
-    return false
-end
-
--- Attend que ItemSpawners existe
-while not findItemSpawners() do
+-- Attend que ItemSpawners existe dans Workspace
+local ITEM_SPAWNERS = Workspace:FindFirstChild("ItemSpawners")
+while not ITEM_SPAWNERS do
     wait(1)
+    ITEM_SPAWNERS = Workspace:FindFirstChild("ItemSpawners")
 end
 
 -- Cherche Cosmic dans ItemSpawners
-local COSMIC_PART
+local COSMIC_PART = ITEM_SPAWNERS:FindFirstChild("Cosmic")
 while not COSMIC_PART do
-    COSMIC_PART = ITEM_SPAWNERS:FindFirstChild("Cosmic")
     wait(1)
+    COSMIC_PART = ITEM_SPAWNERS:FindFirstChild("Cosmic")
 end
 
 -- Fonction pour trouver un ProximityPrompt dans un modèle
 local function findProximityPrompt(model)
+    if not model then
+        warn("Le modèle est nil !")
+        return nil
+    end
     for _, child in ipairs(model:GetDescendants()) do
         if child:IsA("ProximityPrompt") then
             return child
@@ -52,6 +41,11 @@ end
 
 -- Fonction pour collecter un brainrot
 local function collectBrainrot(brainrotModel)
+    if not brainrotModel then
+        warn("brainrotModel est nil !")
+        return
+    end
+
     -- Trouve la PrimaryPart
     local primaryPart = brainrotModel.PrimaryPart
     if not primaryPart then
@@ -87,8 +81,14 @@ local function collectBrainrot(brainrotModel)
     print("Brainrot " .. brainrotModel.Name .. " collecté localement.")
 end
 
--- Fonction pour collecter tous les brainrots enfants de la Part Cosmic
+-- Fonction pour collecter tous les brainrots enfants de Cosmic
 local function collectAllCosmicBrainrots()
+    if not COSMIC_PART then
+        warn("COSMIC_PART est nil ! Impossible de collecter les brainrots.")
+        return
+    end
+
+    -- Si Cosmic est une Part, on récupère ses enfants (les brainrots)
     for _, brainrotModel in ipairs(COSMIC_PART:GetChildren()) do
         if brainrotModel:IsA("Model") then
             collectBrainrot(brainrotModel)
@@ -160,7 +160,6 @@ collectButton.MouseButton1Click:Connect(function()
         statusLabel.Text = "Collecte en cours..."
         collectButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
         isCollecting = true
-        -- Lance la collecte
         collectAllCosmicBrainrots()
     end
 end
