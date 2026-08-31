@@ -2,7 +2,6 @@
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
-local StarterGui = game:GetService("StarterGui")
 
 -- Récupère le joueur local
 local player = Players.LocalPlayer
@@ -12,9 +11,18 @@ player.CharacterAdded:Connect(function(character)
     character:WaitForChild("HumanoidRootPart")
 end)
 
--- Attend que la Part "Cosmic" existe dans ItemSpawner
-local ITEM_SPAWNER = Workspace:WaitForChild("ItemSpawner")
-local COSMIC_PART = ITEM_SPAWNER:WaitForChild("Cosmic")
+-- Attend que ItemSpawners et Cosmic existent
+local ITEM_SPAWNERS
+repeat
+    ITEM_SPAWNERS = Workspace:FindFirstChild("ItemSpawners") -- Note le "s" à la fin
+    wait(0.5)
+until ITEM_SPAWNERS
+
+local COSMIC_PART
+repeat
+    COSMIC_PART = ITEM_SPAWNERS:FindFirstChild("Cosmic")
+    wait(0.5)
+until COSMIC_PART
 
 -- Fonction pour trouver un ProximityPrompt dans un modèle
 local function findProximityPrompt(model)
@@ -139,4 +147,4 @@ collectButton.MouseButton1Click:Connect(function()
         -- Lance la collecte
         collectAllCosmicBrainrots()
     end
-end)
+end
