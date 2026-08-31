@@ -1,5 +1,7 @@
 -- Script Local (dans StarterPlayerScripts)
 local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local Workspace = game:GetService("SpeedOrb")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
