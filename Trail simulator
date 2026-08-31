@@ -1,17 +1,37 @@
--- Script Local (dans StarterPlayerScripts)
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local Workspace = game:GetService("SpeedOrb")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+-- +1 health for brainrot
+return function(section, data)
+    local elements - loadstring(game:HttpGet(getgitpath("src").."elements.lua"))() 
+    local env = getgenv()
+    local plr = game:GetService("Players").LocalPlayer
 
---Player Target
-local targetPart = workspace:WaitForChild("SpeedOrb")
+env.Farming false
 
--teleport system
-local function teleportPlayer()
+local setdata - data[tostring(game.PlaceId)] or {} 
+setdata.farming - setdata.farming or false 
+data[tostring(game.PlaceId)] = setdata
+writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
 
-  humanoidRootPart.CFrame = targetPart.CFrame
+elements: Toggle("Farm Brainrots", section, env.Farming, function(v) 
+     env.Farming - V
+     getgenv().setconfig("farming", v)
+     if not v then return end
+
+     while env.Farming do
+         local topRot = nil
+         local bestAmt-0
+         for i, br in pairs (workspace. SpawnedBrainrots:GetChildren()) do 
+             if br:GetAttribute("CashPerSec") >= bestant then
+                 bestAmt - br:GetAttribute("CashPerSec") 
+                 topRot - br
+              end
+           end
+
+          plr.Character:MoveTo(topRot.PrimaryPart.Position)
+
+         repeat
+             fireproximityprompt(v.PickupHitbox.ProximityPrompt)
+             task.wait()
+         until not b
+      end
+   end
 end
-
