@@ -1,15 +1,7 @@
 -- +1 health for brainrot
 return function(section, data)
-    local elements - loadstring(game:HttpGet(getgitpath("src").."elements.lua"))() 
     local env = getgenv()
     local plr = game:GetService("Players").LocalPlayer
-
-env.Farming false
-
-local setdata - data[tostring(game.PlaceId)] or {} 
-setdata.farming - setdata.farming or false 
-data[tostring(game.PlaceId)] = setdata
-writefile("BrainrotPolice/Config.json", game:GetService("HttpService"):JSONEncode(data))
 
 elements: Toggle("Farm Brainrots", section, env.Farming, function(v) 
      env.Farming - V
@@ -19,9 +11,9 @@ elements: Toggle("Farm Brainrots", section, env.Farming, function(v)
      while env.Farming do
          local topRot = nil
          local bestAmt-0
-         for i, br in pairs (workspace. SpawnedBrainrots:GetChildren()) do 
-             if br:GetAttribute("CashPerSec") >= bestant then
-                 bestAmt - br:GetAttribute("CashPerSec") 
+         for i, br in pairs (workspace. ItemSpawners:GetChildren()) do 
+             if br:GetPrimary("Mesh") >= bestant then
+                 bestAmt - br:GetPrimary("Mesh") 
                  topRot - br
               end
            end
