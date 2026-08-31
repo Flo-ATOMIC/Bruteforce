@@ -1,0 +1,15 @@
+-- Script Local (dans StarterPlayerScripts)
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+--Player Target
+local targetPart = workspace:WaitForChild("SpeedOrb")
+
+-teleport system
+local function teleportPlayer()
+
+  humanoidRootPart.CFrame = targetPart.CFrame
+end
+
