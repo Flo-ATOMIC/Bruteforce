@@ -1,29 +1,50 @@
--- +1 health for brainrot
-return function(section, data)
-    local env = getgenv()
-    local plr = game:GetService("Players").LocalPlayer
+-- Services
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 
-elements: Toggle("Farm Brainrots", section, env.Farming, function(v) 
-     env.Farming - V
-     getgenv().setconfig("farming", v)
-     if not v then return end
+-- Dossier contenant les brainrots Cosmic
+local ITEM_SPAWNER = Workspace:WaitForChild("ItemSpawners")
+local COSMIC_FOLDER = ITEM_SPAWNER:WaitForChild("Cosmic")
 
-     while env.Farming do
-         local topRot = nil
-         local bestAmt-0
-         for i, br in pairs (workspace. ItemSpawners:GetChildren()) do 
-             if br:GetPrimary("Mesh") >= bestant then
-                 bestAmt - br:GetPrimary("Mesh") 
-                 topRot - br
-              end
-           end
+-- Fonction pour téléporter le joueur vers un brainrot et activer son ProximityPrompt
+local function collectBrainrot(player, brainrotModel)
+    -- Vérifie que le modèle a une PrimaryPart et un ProximityPrompt
+    local primaryPart = brainrotModel:FindFirstChild("Mesh") or brainrotModel.PrimaryPart
+    local proximityPrompt = brainrotModel:FindFirstChildOfClass("ProximityPrompt")
 
-          plr.Character:MoveTo(topRot.PrimaryPart.Position)
+    if not primaryPart or not proximityPrompt then
+        warn("Le modèle " .. brainrotModel.Name .. " n'a pas de PrimaryPart ou de ProximityPrompt.")
+        return
+    end
 
-         repeat
-             fireproximityprompt(v.PickupHitbox.ProximityPrompt)
-             task.wait()
-         until not b
-      end
-   end
+    -- Téléporte le joueur vers le brainrot
+    local character = player.Character
+    if character then
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            humanoidRootPart.CFrame = primaryPart.CFrame + Vector3.new(0, 3, 0)
+        end
+    end
+
+    -- Active le ProximityPrompt automatiquement
+    proximityPrompt:InputHoldBegin()
+
+    -- Attend que le ProximityPrompt soit activé (simule une interaction)
+    wait(0.5) -- Délai pour s'assurer que le joueur est bien téléporté
+    proximityPrompt:InputHoldEnd()
+
+    print("Brainrot " .. brainrotModel.Name .. " collecté par " .. player.Name)
 end
+
+-- Fonction pour collecter tous les brainrots Cosmic
+local function collectAllCosmicBrainrots(player)
+    for _, brainrotModel in ipairs(COSMIC_FOLDER:GetChildren()) do
+        if brainrotModel:IsA("Pakramatmatina") then
+            collectBrainrot(player, brainrotModel)
+            wait(1) -- Délai entre chaque collecte pour éviter les bugs
+        end
+    end
+end
+
+-- Écouteur pour déclencher la collecte via un RemoteEvent
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
