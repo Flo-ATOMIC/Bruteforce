@@ -1,2 +1,177 @@
-Local workspace
-Local Player
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+
+-- Attend que le personnage soit chargé
+player.CharacterAdded:Connect(function(character)
+    character:WaitForChild("HumanoidRootPart")
+end)
+
+-- Attend ItemSpawners avec un timeout de 10 secondes
+local ITEM_SPAWNERS = Workspace:WaitForChild("ItemSpawners", 10)
+if not ITEM_SPAWNERS then warn("ItemSpawners introuvable !") return end
+
+-- Attend Cosmic avec un timeout de 10 secondes
+local COSMIC_PART = ITEM_SPAWNERS:WaitForChild("Cosmic", 10)
+if not COSMIC_PART then warn("Cosmic introuvable !") return end
+
+-- Fonction pour trouver un ProximityPrompt
+local function findProximityPrompt(model)
+    if not model then return nil end
+    for _, child in ipairs(model:GetDescendants()) do
+        if child:IsA("ProximityPrompt") then
+            return child
+        end
+    end
+    return nil
+end
+
+-- Fonction de téléportation vers la base
+local function teleportToBase()
+    local plotName = "Plot_skyatriy"
+    local plot = Workspace:FindFirstChild(plotName)
+    
+    if plot then
+        local plotPart = plot.PrimaryPart or plot:FindFirstChild("Base") or plot
+        local char = player.Character
+        
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = plotPart.CFrame + Vector3.new(0, 3, 0)
+            print("Téléporté vers " .. plotName)
+        end
+    else
+        warn("Le plot '" .. plotName .. "' est introuvable dans Workspace.")
+    end
+end
+
+-- Fonction pour collecter un brainrot (retourne true si succès, false si échec/inventaire plein)
+local function collectBrainrot(brainrotModel)
+    if not brainrotModel then return false end
+
+    local primaryPart = brainrotModel.PrimaryPart or brainrotModel:FindFirstChild("Mesh") or brainrotModel:FindFirstChild("Base")
+    if not primaryPart then return false end
+
+    local proximityPrompt = findProximityPrompt(brainrotModel)
+    if not proximityPrompt then return false end
+
+    local character = player.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character.HumanoidRootPart.CFrame = primaryPart.CFrame + Vector3.new(0, 3, 0)
+        wait(0.2) 
+    end
+
+    proximityPrompt:InputHoldBegin()
+    wait(0.5)
+    proximityPrompt:InputHoldEnd()
+
+    -- Vérification cruciale : est-ce que le brainrot a bien disparu ?
+    wait(0.2) -- Laisse le temps au serveur de traiter la demande
+    if brainrotModel.Parent == COSMIC_PART then
+        -- Le modèle est toujours là, donc la collecte a échoué (inventaire plein)
+        return false 
+    else
+        print("Brainrot " .. brainrotModel.Name .. " collecté.")
+        return true
+    end
+end
+
+-- Fonction pour collecter tous les brainrots
+local function collectAllCosmicBrainrots()
+    if not COSMIC_PART then return end
+
+    for _, brainrotModel in ipairs(COSMIC_PART:GetChildren()) do
+        if brainrotModel:IsA("Model") then
+            local success = collectBrainrot(brainrotModel)
+            
+            if not success then
+                -- Si la collecte échoue (inventaire plein), on arrête la boucle
+                statusLabel.Text = "Inventaire plein ! Retour..."
+                warn("Inventaire plein, arrêt de la collecte.")
+                wait(1)
+                break
+            end
+            
+            wait(1) -- Délai entre chaque collecte
+        end
+    end
+
+    -- Téléportation à la fin, que ce soit un succès total ou un arrêt anticipé
+    teleportToBase()
+end
+
+-- Création de l'interface (GUI)
+local gui = Instance.new("ScreenGui")
+gui.Name = "BrainrotCollectorGUI"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 200, 0, 100)
+mainFrame.Position = UDim2.new(0.5, -100, 0.9, -50)
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = gui
+
+local collectButton = Instance.new("TextButton")
+collectButton.Name = "CollectButton"
+collectButton.Size = UDim2.new(0.8, 0, 0.6, 0)
+collectButton.Position = UDim2.new(0.1, 0, 0.2, 0)
+collectButton.Text = "Collecter les Brainrots"
+collectButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+collectButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+collectButton.Font = Enum.Font.GothamBold
+collectButton.TextSize = 14
+collectButton.Parent = mainFrame
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.Size = UDim2.new(0.8, 0, 0.2, 0)
+statusLabel.Position = UDim2.new(0.1, 0, 0.7, 0)
+statusLabel.Text = "Prêt à collecter"
+statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Font = Enum.Font.GothamBold
+statusLabel.TextSize = 12
+statusLabel.Parent = mainFrame
+
+-- Gestion des clics
+local isCollecting = false
+
+collectButton.MouseEnter:Connect(function()
+    if not isCollecting then
+        collectButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    end
+end)
+
+collectButton.MouseLeave:Connect(function()
+    if isCollecting then
+        collectButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+    else
+        collectButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+    end
+end)
+
+collectButton.MouseButton1Click:Connect(function()
+    if isCollecting then
+        collectButton.Text = "Collecter les Brainrots"
+        statusLabel.Text = "Prêt à collecter"
+        collectButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+        isCollecting = false
+    else
+        collectButton.Text = "Arrêter la collecte"
+        statusLabel.Text = "Collecte en cours..."
+        collectButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+        isCollecting = true
+        
+        task.spawn(function()
+            collectAllCosmicBrainrots()
+            if isCollecting then -- Remet le bouton à zéro une fois terminé
+                collectButton.Text = "Collecter les Brainrots"
+                statusLabel.Text = "Prêt à collecter"
+                collectButton.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+                isCollecting = false
+            end
+        end)
+    end
+end)
