@@ -1,0 +1,38 @@
+repeat task.wait() until game:IsLoaded()
+
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+
+-- 1. VOS SCRIPTS À EXÉCUTER DÈS QUE VOUS REJOIGNEZ
+local MonScript = [[
+    repeat task.wait() until game:IsLoaded()
+    task.wait(3) -- Petite pause pour laisser le jeu charger complètement
+
+    -- COLLER VOTRE SCRIPT CI-DESSOUS (exemple avec un loadstring) :
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/bao-2204/bao/refs/heads/main/Main/BeeSwarmSimulator.lua"))()
+]]
+
+-- Exécute votre script dès le premier lancement
+loadstring(MonScript)()
+
+-- 2. SYSTÈME DE RECONNEXION AUTOMATIQUE EN CAS DE COUPURE
+local promptOverlay = CoreGui:WaitForChild("RobloxPromptGui"):WaitForChild("promptOverlay")
+
+promptOverlay.ChildAdded:Connect(function(child)
+    if child.Name == "ErrorPrompt" then
+        -- Prépare l'exécution automatique pour le prochain serveur
+        local queue = queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
+        if queue then
+            queue(MonScript)
+        end
+
+        -- Tente de se reconnecter en boucle toutes les 5 secondes
+        while true do
+            task.wait(5)
+            pcall(function()
+                TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
+            end)
+        end
+    end
+end)
